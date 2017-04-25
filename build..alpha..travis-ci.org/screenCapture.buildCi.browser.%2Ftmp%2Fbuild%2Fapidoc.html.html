@@ -80,32 +80,6 @@
 
     </ol></li>
 
-    <li class="apidocModuleLi"><a href="#apidoc.module.mixpanel.Client">module mixpanel.Client</a><ol>
-
-        <li>
-
-            <a class="apidocElementLiA" href="#apidoc.element.mixpanel.Client.Client">
-            function <span class="apidocSignatureSpan">mixpanel.</span>Client
-            <span class="apidocSignatureSpan">(token)</span>
-            </a>
-
-        </li>
-
-    </ol></li>
-
-    <li class="apidocModuleLi"><a href="#apidoc.module.mixpanel.init">module mixpanel.init</a><ol>
-
-        <li>
-
-            <a class="apidocElementLiA" href="#apidoc.element.mixpanel.init.init">
-            function <span class="apidocSignatureSpan">mixpanel.</span>init
-            <span class="apidocSignatureSpan">(token, config)</span>
-            </a>
-
-        </li>
-
-    </ol></li>
-
     <li class="apidocModuleLi"><a href="#apidoc.module.mixpanel.utils">module mixpanel.utils</a><ol>
 
         <li>
@@ -136,7 +110,17 @@
     console.warn("The function `Client(token)` is deprecated.  It is now called `init(token)`.");
     return create_client(token);
 }</pre></li>
-    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+
+0.0.6 / 2012-01-01
+===================
+* added engage support
+  * people.set()
+  * people.increment()
+  * people.delete_user()
+* deprecated old constructor: require("mixpanel").<span class="apidocCodeKeywordSpan">Client</span>(token)
+* added new constructor: require("mixpanel").init(token)
+...</pre></li>
     </ul>
 
 
@@ -277,207 +261,25 @@
     /**
      * Send an event to Mixpanel, using th ...</pre></li>
     <li>example usage<pre class="apidocCodePre">...
------------
 
-```javascript
+
+
 // grab the Mixpanel factory
-var Mixpanel = require('mixpanel');
+var Mixpanel = require('./lib/mixpanel-node');
 
 // create an instance of the mixpanel client
-var mixpanel = Mixpanel.<span class="apidocCodeKeywordSpan">init</span>('6fd9434dba686db2d1ab66b4462a3a67');
-
-// initialize mixpanel client configured to communicate over https
-var mixpanel = Mixpanel.init('6fd9434dba686db2d1ab66b4462a3a67', {
-    protocol: 'https'
-});
+var mixpanel = Mixpanel.<span class="apidocCodeKeywordSpan">init</span>('962dbca1bbc54701d402c94d65b4a20e');
+mixpanel.set_config({ debug: true });
 
 // track an event with optional properties
+mixpanel.track("my event", {
+distinct_id: "some unique client id",
+as: "many",
+properties: "as",
 ...</pre></li>
     </ul>
 
 
-
-
-</div>
-
-<div class="apidocSectionDiv">
-<h1><a href="#apidoc.module.mixpanel.Client" id="apidoc.module.mixpanel.Client">module mixpanel.Client</a></h1>
-
-
-    <h2>
-        <a href="#apidoc.element.mixpanel.Client.Client" id="apidoc.element.mixpanel.Client.Client">
-        function <span class="apidocSignatureSpan">mixpanel.</span>Client
-        <span class="apidocSignatureSpan">(token)</span>
-        </a>
-    </h2>
-    <ul>
-    <li>description and source-code<pre class="apidocCodePre">Client = function (token) {
-    console.warn("The function `Client(token)` is deprecated.  It is now called `init(token)`.");
-    return create_client(token);
-}</pre></li>
-    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
-    </ul>
-
-
-</div>
-
-<div class="apidocSectionDiv">
-<h1><a href="#apidoc.module.mixpanel.init" id="apidoc.module.mixpanel.init">module mixpanel.init</a></h1>
-
-
-    <h2>
-        <a href="#apidoc.element.mixpanel.init.init" id="apidoc.element.mixpanel.init.init">
-        function <span class="apidocSignatureSpan">mixpanel.</span>init
-        <span class="apidocSignatureSpan">(token, config)</span>
-        </a>
-    </h2>
-    <ul>
-    <li>description and source-code<pre class="apidocCodePre">init = function (token, config) {
-    var metrics = {};
-    var proxyAgent = create_proxy_agent();
-
-    // mixpanel constants
-    var MAX_BATCH_SIZE = 50,
-        TRACK_AGE_LIMIT = 60 * 60 * 24 * 5;
-
-    if(!token) {
-        throw new Error("The Mixpanel Client needs a Mixpanel token: `init(token)`");
-    }
-
-    // Default config
-    metrics.config = {
-        test: false,
-        debug: false,
-        verbose: false,
-        host: 'api.mixpanel.com',
-        protocol: 'http'
-    };
-
-    metrics.token = token;
-
-<span class="apidocCodeCommentSpan">    /**
-     * sends an async GET or POST request to mixpanel
-     * for batch processes data must be send in the body of a POST
-     * @param {object} options
-     * @param {string} options.endpoint
-     * @param {object} options.data         the data to send in the request
-     * @param {string} [options.method]     e.g. `get` or `post`, defaults to `get`
-     * @param {function} callback           called on request completion or error
-     */
-</span>    metrics.send_request = function(options, callback) {
-        callback = callback || function() {};
-
-        var content = (new Buffer(JSON.stringify(options.data))).toString('base64'),
-            endpoint = options.endpoint,
-            method = (options.method || 'GET').toUpperCase(),
-            query_params = {
-                'ip': 0,
-                'verbose': metrics.config.verbose ? 1 : 0
-            },
-            key = metrics.config.key,
-            request_lib = REQUEST_LIBS[metrics.config.protocol],
-            request_options = {
-                host: metrics.config.host,
-                port: metrics.config.port,
-                headers: {},
-                method: method
-            },
-            request;
-
-        if (!request_lib) {
-            throw new Error(
-                "Mixpanel Initialization Error: Unsupported protocol " + metrics.config.protocol + ". " +
-                "Supported protocols are: " + Object.keys(REQUEST_LIBS)
-            );
-        }
-
-
-        if (method === 'POST') {
-            content = 'data=' + content;
-            request_options.headers['Content-Type'] = 'application/x-www-form-urlencoded';
-            request_options.headers['Content-Length'] = Buffer.byteLength(content);
-        } else if (method === 'GET') {
-            query_params.data = content;
-        }
-
-
-        // add `key` query params
-        if (key) {
-            query_params.api_key = key;
-        } else if (endpoint === '/import') {
-            throw new Error("The Mixpanel Client needs a Mixpanel api key when importing old events: `init(token, { key: ... })`");
-        }
-
-        if (proxyAgent) {
-            request_options.agent = proxyAgent;
-        }
-
-        if (metrics.config.test) {
-            query_params.test = 1;
-        }
-
-        request_options.path = endpoint + "?" + querystring.stringify(query_params);
-
-        request = request_lib.request(request_options, function(res) {
-            var data = "";
-            res.on('data', function(chunk) {
-                data += chunk;
-            });
-
-            res.on('end', function() {
-                var e;
-                if (metrics.config.verbose) {
-                    try {
-                        var result = JSON.parse(data);
-                        if(result.status != 1) {
-                            e = new Error("Mixpanel Server Error: " + result.error);
-                        }
-                    }
-                    catch(ex) {
-                        e = new Error("Could not parse response from Mixpanel");
-                    }
-                }
-                else {
-                    e = (data !== '1') ? new Error("Mixpanel Server Error: " + data) : undefined;
-                }
-
-                callback(e);
-            });
-        });
-
-        request.on('error', function(e) {
-            if (metrics.config.debug) {
-                console.log("Got Error: " + e.message);
-            }
-            callback(e);
-        });
-
-        if (method === 'POST') {
-            request.write(content);
-        }
-        request.end();
-    };
-
-    /**
-     * Send an event to Mixpanel, using th ...</pre></li>
-    <li>example usage<pre class="apidocCodePre">...
------------
-
-```javascript
-// grab the Mixpanel factory
-var Mixpanel = require('mixpanel');
-
-// create an instance of the mixpanel client
-var mixpanel = Mixpanel.<span class="apidocCodeKeywordSpan">init</span>('6fd9434dba686db2d1ab66b4462a3a67');
-
-// initialize mixpanel client configured to communicate over https
-var mixpanel = Mixpanel.init('6fd9434dba686db2d1ab66b4462a3a67', {
-    protocol: 'https'
-});
-
-// track an event with optional properties
-...</pre></li>
-    </ul>
 
 
 </div>
